@@ -1,16 +1,11 @@
-import logging
+import shutil
+import json
+import os
 from telegram import Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
 from pyfiglet import Figlet
-import shutil
-import json
-import os
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 LightGreen = "\033[92m"
 DarkGray = "\033[90m"
@@ -116,6 +111,7 @@ def main():
     dp.add_handler(CommandHandler("phone", phone_info))
     
     updater.start_polling()
+    print(f"{LightGreen}Bot Started{White}")
 
     updater.idle()
 
