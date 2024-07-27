@@ -15,9 +15,8 @@ logger = logging.getLogger(__name__)
 
 # Define color codes
 LightGreen = "\033[92m"
-DarkGray = "\033[90m"
-White = "\033[97m"
 Red = "\033[91m"
+White = "\033[97m"
 
 def print_banner():
     # Get terminal width
