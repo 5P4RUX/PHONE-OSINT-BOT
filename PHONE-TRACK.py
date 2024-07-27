@@ -1,12 +1,16 @@
 import logging
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
-import phonenumbers
-from phonenumbers import carrier, geocoder, timezone
-from pyfiglet import Figlet
 import shutil
 import json
 import os
+import phonenumbers
+from phonenumbers import carrier, geocoder, timezone
+from pyfiglet import Figlet
+try:
+    from telegram import Update
+    from telegram.ext import Updater, CommandHandler, CallbackContext
+except ImportError:
+    from telegram import Update
+    from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Logging ayarları
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -15,9 +19,8 @@ logger = logging.getLogger(__name__)
 
 # Define color codes
 LightGreen = "\033[92m"
-DarkGray = "\033[90m"
-White = "\033[97m"
 Red = "\033[91m"
+White = "\033[97m"
 
 def print_banner():
     # Get terminal width
@@ -35,7 +38,7 @@ def print_banner():
     print(f"{Red}{github_line}{White}")
     print(f"{Red}{tool_description_line}{White}")
 
-def start(update: Update, context: CallbackContext):
+def start(update: Update, context):
     update.message.reply_text(
          "Welcome to the Phone-Track Bot! 📱\n\n"
         "This bot provides detailed information about phone numbers using OSINT (Open Source Intelligence) techniques. "
@@ -45,7 +48,7 @@ def start(update: Update, context: CallbackContext):
         "/help - DISPLAYS THE HELP MENU\n"
     )
 
-def help_command(update: Update, context: CallbackContext):
+def help_command(update: Update, context):
     update.message.reply_text(
         "Phone-Track Bot Help\n\n"
         "This bot provides detailed information about phone numbers. Here are the available commands:\n\n"
@@ -56,7 +59,7 @@ def help_command(update: Update, context: CallbackContext):
         "The /phone command provides information such as location, region code, time zone, operator, and validity of the phone number."
     )
 
-def phone_info(update: Update, context: CallbackContext):
+def phone_info(update: Update, context):
     if context.args:
         user_phone = ' '.join(context.args)
         
@@ -120,22 +123,27 @@ def main():
     # Bot token'ı kullanıcıdan alınacak
     token = input("ENTER BOT TOKEN: ")
 
-    # Create Updater and pass it your bot's token.
-    updater = Updater(token, use_context=True)
-
-    # Get the dispatcher to register handlers
-    dp = updater.dispatcher
+    try:
+        # Old version
+        updater = Updater(token, use_context=True)
+        dp = updater.dispatcher
+    except TypeError:
+        # New version
+        application = Application.builder().token(token).build()
+        dp = application
 
     # Register handlers
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help_command))
     dp.add_handler(CommandHandler("phone", phone_info))
-    
-    # Start the Bot
-    updater.start_polling()
 
-    # Run the bot until you send a signal to stop
-    updater.idle()
+    try:
+        # Old version
+        updater.start_polling()
+        updater.idle()
+    except NameError:
+        # New version
+        application.run_polling()
 
 if __name__ == '__main__':
     main()
