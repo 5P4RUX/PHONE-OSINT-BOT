@@ -1,7 +1,7 @@
 import logging
 import shutil
 from queue import Queue
-from telegram import Update, Bot
+from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
@@ -119,12 +119,9 @@ async def main():
 
     # Bot token'ı kullanıcıdan alınacak
     token = input("Please enter your bot token: ")
-    
-    # Create the update queue
-    update_queue = Queue()
 
     # Initialize the Application
-    application = ApplicationBuilder().token(token).update_queue(update_queue).build()
+    application = ApplicationBuilder().token(token).build()
 
     # Register handlers
     application.add_handler(CommandHandler('start', start))
