@@ -1,20 +1,21 @@
-from queue import Queue
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
 import logging
+import shutil
+from queue import Queue
+from telegram import Update, Bot
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
 import json
 import os
+from pyfiglet import Figlet
 
-# Logging ayarları
+# Logging settings
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Define color codes
 LightGreen = "\033[92m"
-DarkGray = "\033[90m"
 White = "\033[97m"
 Red = "\033[91m"
 
@@ -34,8 +35,8 @@ def print_banner():
     print(f"{Red}{github_line}{White}")
     print(f"{Red}{tool_description_line}{White}")
 
-def start(update: Update, context: CallbackContext):
-    update.message.reply_text(
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
          "Welcome to the Phone-Track Bot! 📱\n\n"
         "This bot provides detailed information about phone numbers using OSINT (Open Source Intelligence) techniques. "
         "You can use this bot to find the carrier, location, timezone, and validity of any phone number around the world.\n\n"
@@ -44,8 +45,8 @@ def start(update: Update, context: CallbackContext):
         "/help - Show the help message with all commands\n"
     )
 
-def help_command(update: Update, context: CallbackContext):
-    update.message.reply_text(
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
         "Phone-Track Bot Help\n\n"
         "This bot provides detailed information about phone numbers. Here are the available commands:\n\n"
         "/start - Display the welcome message\n\n"
@@ -55,7 +56,7 @@ def help_command(update: Update, context: CallbackContext):
         "The /phone command provides information such as location, region code, time zone, operator, and validity of the phone number."
     )
 
-def phone_info(update: Update, context: CallbackContext):
+async def phone_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if context.args:
         user_phone = ' '.join(context.args)
         
@@ -63,7 +64,7 @@ def phone_info(update: Update, context: CallbackContext):
             # Parse the entered phone number
             parsed_number = phonenumbers.parse(user_phone)
         except phonenumbers.phonenumberutil.NumberParseException:
-            update.message.reply_text("Invalid phone number format. Please enter the correct format.")
+            await update.message.reply_text("Invalid phone number format. Please enter the correct format.")
             return
 
         # Retrieve information about the phone number
@@ -105,36 +106,38 @@ def phone_info(update: Update, context: CallbackContext):
 
         # Send the JSON file to the user
         with open(file_path, 'rb') as json_file:
-            update.message.reply_document(document=json_file, filename='phone_info.json')
+            await update.message.reply_document(document=json_file, filename='phone_info.json')
 
         # Optionally, you can delete the file after sending
         os.remove(file_path)
     else:
-        update.message.reply_text("Please provide a phone number. Usage: /phone <phone_number>")
+        await update.message.reply_text("Please provide a phone number. Usage: /phone <phone_number>")
 
-def main():
+async def main():
     # Print the banner
     print_banner()
-    
+
     # Bot token'ı kullanıcıdan alınacak
     token = input("Please enter your bot token: ")
     
     # Create the update queue
     update_queue = Queue()
-    
-    # Initialize the Updater with token and update_queue
-    updater = Updater(token, update_queue=update_queue, use_context=True)
-    
-    dispatcher = updater.dispatcher
+
+    # Initialize the Application
+    application = ApplicationBuilder().token(token).update_queue(update_queue).build()
 
     # Register handlers
-    dispatcher.add_handler(CommandHandler('start', start))
-    dispatcher.add_handler(CommandHandler('help', help_command))
-    dispatcher.add_handler(CommandHandler('phone', phone_info))
+    application.add_handler(CommandHandler('start', start))
+    application.add_handler(CommandHandler('help', help_command))
+    application.add_handler(CommandHandler('phone', phone_info))
 
     # Start the bot
-    updater.start_polling()
-    updater.idle()
+    await application.start()
+    await application.updater.start_polling()
+
+    # Run the bot until you send a signal to stop
+    await application.idle()
 
 if __name__ == '__main__':
-    main()
+    import asyncio
+    asyncio.run(main())
