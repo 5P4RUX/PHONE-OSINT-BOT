@@ -50,8 +50,8 @@ python PHONE-TRACK.py
 ## Keywords
 - Telegram Bot
 - Python
-- Cryptography 
-- Encoder
+- Osint
+- Phone Track
 - Automation
 
 ## License
