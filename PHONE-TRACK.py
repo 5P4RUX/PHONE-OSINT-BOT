@@ -1,6 +1,6 @@
 import logging
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Updater, CommandHandler, CallbackContext
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
 from pyfiglet import Figlet
@@ -15,8 +15,9 @@ logger = logging.getLogger(__name__)
 
 # Define color codes
 LightGreen = "\033[92m"
-Red = "\033[91m"
+DarkGray = "\033[90m"
 White = "\033[97m"
+Red = "\033[91m"
 
 def print_banner():
     # Get terminal width
@@ -34,8 +35,8 @@ def print_banner():
     print(f"{Red}{github_line}{White}")
     print(f"{Red}{tool_description_line}{White}")
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
+def start(update: Update, context: CallbackContext):
+    update.message.reply_text(
          "Welcome to the Phone-Track Bot! 📱\n\n"
         "This bot provides detailed information about phone numbers using OSINT (Open Source Intelligence) techniques. "
         "You can use this bot to find the carrier, location, timezone, and validity of any phone number around the world.\n\n"
@@ -44,8 +45,8 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/help - DISPLAYS THE HELP MENU\n"
     )
 
-async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
+def help_command(update: Update, context: CallbackContext):
+    update.message.reply_text(
         "Phone-Track Bot Help\n\n"
         "This bot provides detailed information about phone numbers. Here are the available commands:\n\n"
         "/start - Display the welcome message\n\n"
@@ -55,7 +56,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "The /phone command provides information such as location, region code, time zone, operator, and validity of the phone number."
     )
 
-async def phone_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def phone_info(update: Update, context: CallbackContext):
     if context.args:
         user_phone = ' '.join(context.args)
         
@@ -63,7 +64,7 @@ async def phone_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
             # Parse the entered phone number
             parsed_number = phonenumbers.parse(user_phone)
         except phonenumbers.phonenumberutil.NumberParseException:
-            await update.message.reply_text("Invalid phone number format. Please enter the correct format.")
+            update.message.reply_text("Invalid phone number format. Please enter the correct format.")
             return
 
         # Retrieve information about the phone number
@@ -105,31 +106,36 @@ async def phone_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Send the JSON file to the user
         with open(file_path, 'rb') as json_file:
-            await update.message.reply_document(document=json_file, filename='sparux-666-info.json')
+            update.message.reply_document(document=json_file, filename='sparux-666-info.json')
 
         # Optionally, you can delete the file after sending
         os.remove(file_path)
     else:
-        await update.message.reply_text("Please provide a phone number. Usage: /phone <phone_number>")
+        update.message.reply_text("Please provide a phone number. Usage: /phone <phone_number>")
 
-async def main():
+def main():
     # Print the banner
     print_banner()
     
     # Bot token'ı kullanıcıdan alınacak
     token = input("ENTER BOT TOKEN: ")
 
-    # Create Application and pass it your bot's token.
-    application = Application.builder().token(token).build()
+    # Create Updater and pass it your bot's token.
+    updater = Updater(token, use_context=True)
+
+    # Get the dispatcher to register handlers
+    dp = updater.dispatcher
 
     # Register handlers
-    application.add_handler(CommandHandler("start", start))
-    application.add_handler(CommandHandler("help", help_command))
-    application.add_handler(CommandHandler("phone", phone_info))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", help_command))
+    dp.add_handler(CommandHandler("phone", phone_info))
     
     # Start the Bot
-    await application.run_polling()
+    updater.start_polling()
+
+    # Run the bot until you send a signal to stop
+    updater.idle()
 
 if __name__ == '__main__':
-    import asyncio
-    asyncio.run(main())
+    main()
