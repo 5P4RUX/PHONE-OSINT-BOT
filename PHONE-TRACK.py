@@ -5,12 +5,6 @@ import os
 import phonenumbers
 from phonenumbers import carrier, geocoder, timezone
 from pyfiglet import Figlet
-try:
-    from telegram import Update
-    from telegram.ext import Updater, CommandHandler, CallbackContext
-except ImportError:
-    from telegram import Update
-    from telegram.ext import Application, CommandHandler, ContextTypes
 
 # Logging ayarları
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -38,7 +32,7 @@ def print_banner():
     print(f"{Red}{github_line}{White}")
     print(f"{Red}{tool_description_line}{White}")
 
-def start(update: Update, context):
+def start(update, context):
     update.message.reply_text(
          "Welcome to the Phone-Track Bot! 📱\n\n"
         "This bot provides detailed information about phone numbers using OSINT (Open Source Intelligence) techniques. "
@@ -48,7 +42,7 @@ def start(update: Update, context):
         "/help - DISPLAYS THE HELP MENU\n"
     )
 
-def help_command(update: Update, context):
+def help_command(update, context):
     update.message.reply_text(
         "Phone-Track Bot Help\n\n"
         "This bot provides detailed information about phone numbers. Here are the available commands:\n\n"
@@ -59,7 +53,7 @@ def help_command(update: Update, context):
         "The /phone command provides information such as location, region code, time zone, operator, and validity of the phone number."
     )
 
-def phone_info(update: Update, context):
+def phone_info(update, context):
     if context.args:
         user_phone = ' '.join(context.args)
         
@@ -123,26 +117,26 @@ def main():
     # Bot token'ı kullanıcıdan alınacak
     token = input("ENTER BOT TOKEN: ")
 
+    # Kütüphane sürümünü kontrol et
     try:
-        # Old version
-        updater = Updater(token, use_context=True)
+        from telegram.ext import Updater
+        updater = Updater(token)
         dp = updater.dispatcher
-    except TypeError:
-        # New version
-        application = Application.builder().token(token).build()
-        dp = application
-
-    # Register handlers
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("phone", phone_info))
-
-    try:
-        # Old version
+        # Register handlers
+        dp.add_handler(CommandHandler("start", start))
+        dp.add_handler(CommandHandler("help", help_command))
+        dp.add_handler(CommandHandler("phone", phone_info))
+        # Start the Bot
         updater.start_polling()
         updater.idle()
-    except NameError:
-        # New version
+    except ImportError:
+        from telegram.ext import Application, CommandHandler, ContextTypes
+        application = Application.builder().token(token).build()
+        # Register handlers
+        application.add_handler(CommandHandler("start", start))
+        application.add_handler(CommandHandler("help", help_command))
+        application.add_handler(CommandHandler("phone", phone_info))
+        # Start the Bot
         application.run_polling()
 
 if __name__ == '__main__':
